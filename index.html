@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mosaic Knitting Pattern Generator</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Mosaic Knitting Pattern Generator</h1>
+            <p>Generate valid two-color mosaic knitting charts. Each row uses only one color; slipped stitches carry
+                the other color from below.</p>
+            <div class="dark-mode-toggle-container">
+                <div class="toggle-container">
+                    <span class="toggle-label" id="darkModeLabel">Dark mode</span>
+                    <button class="toggle" id="darkModeToggle" type="button" role="switch" aria-checked="false"
+                        aria-labelledby="darkModeLabel"></button>
+                </div>
+            </div>
+        </header>
+
+        <main id="maincontent" role="main" tabindex="-1">
+            <div class="main-content">
+
+                <div class="working-area">
+                    <section class="canvas-area" aria-label="Knitting chart">
+                        <div id="canvas-container">
+                            <div id="sketch-holder"></div>
+                        </div>
+                        <div class="canvas-actions">
+                            <button id="saveBtn" type="button" class="btn">Save PNG</button>
+                            <button id="saveSvgBtn" type="button" class="btn">Save SVG</button>
+                            <button id="savePdfBtn" type="button" class="btn">Save PDF</button>
+                        </div>
+                    </section>
+
+                    <aside class="controls-area" aria-label="Pattern settings">
+
+                        <div class="control-group">
+                            <h3>Dimensions</h3>
+                            <label for="cols">Stitches
+                                <input type="number" id="cols" min="4" max="60" value="20">
+                            </label>
+                            <label for="rows">Rows
+                                <input type="number" id="rows" min="4" max="80" value="24">
+                            </label>
+                            <label for="cellSize">Cell size (px)
+                                <input type="number" id="cellSize" min="8" max="40" value="20">
+                            </label>
+                            <h3>Colors</h3>
+                            <div class="color-row">
+                                <div class="working-color-control">
+                                    <label for="colorA">A</label>
+                                    <input type="color" id="colorA" value="#1a1a2e">
+                                </div>
+                                <button class="btn btn-icon" id="swapColorsBtn" aria-label="Swap colors A and B">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" aria-hidden="true">
+                                        <polyline points="1 4 1 10 7 10"></polyline>
+                                        <polyline points="23 20 23 14 17 14"></polyline>
+                                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15">
+                                        </path>
+                                    </svg>
+                                </button>
+                                <div class="working-color-control">
+                                    <label for="colorB">B</label>
+                                    <input type="color" id="colorB" value="#90D5FF">
+                                </div>
+                            </div>
+                            <h3>Algorithm</h3>
+                            <select aria-label="Algorithm" id="algorithm" aria-describedby="algoSummary">
+                                <optgroup label="Foundations">
+                                    <option value="random">Random</option>
+                                </optgroup>
+                                <optgroup label="Structured patterns">
+                                    <option value="diamonds">Diamonds</option>
+                                    <option value="chevron">Chevron</option>
+                                    <option value="brick">Brick</option>
+                                    <option value="diagonal">Diagonal Stripes</option>
+                                    <option value="seed">Seed Stitch</option>
+                                    <option value="zigzag">Zigzag</option>
+                                    <option value="basket">Basketweave</option>
+                                    <option value="truchet">Truchet Tiles</option>
+                                </optgroup>
+                                <optgroup label="Organic and noise">
+                                    <option value="perlin">Perlin Noise</option>
+                                    <option value="waves">Wave Interference</option>
+                                    <option value="voronoi">Voronoi Cells</option>
+                                    <option value="reactionDiffusion">Reaction-Diffusion</option>
+                                    <option value="dla">Diffusion-Limited Aggregation</option>
+                                </optgroup>
+                                <optgroup label="Cellular automata">
+                                    <option value="cellular">Cellular</option>
+                                    <option value="wolfram">Wolfram CA</option>
+                                    <option value="gameOfLife">Game of Life</option>
+                                </optgroup>
+                                <optgroup label="Fractals and curves">
+                                    <option value="sierpinski">Sierpinski Triangle</option>
+                                    <option value="lissajous">Lissajous Curves</option>
+                                    <option value="spiral">Spiral</option>
+                                    <option value="mandelbrot">Mandelbrot</option>
+                                </optgroup>
+                                <optgroup label="Constraint-based">
+                                    <option value="wfc">Wave Function Collapse</option>
+                                </optgroup>
+                                <optgroup label="Inputs">
+                                    <option value="image">Image Import (Dithering)</option>
+                                </optgroup>
+                                <optgroup label="Classic patterns">
+                                    <option value="classic">Classic — choose below</option>
+                                </optgroup>
+                            </select>
+                            <h3>Symmetry</h3>
+                            <select aria-label="Symmetry Mode" id="symmetryMode">
+                                <option value="none">None</option>
+                                <option value="mirrorX">Mirror X</option>
+                                <option value="mirrorY">Mirror Y</option>
+                                <option value="kaleidoscope">Kaleidoscope</option>
+                            </select>
+
+
+                        </div>
+
+                        <p id="algoSummary" class="algo-summary" aria-live="polite"></p>
+
+                        <div class="control-group" id="classicGroup" hidden>
+                            <label for="classicPattern">Classic pattern
+                                <select id="classicPattern">
+                                    <option value="greekKey">Greek Key</option>
+                                    <option value="houndstooth">Houndstooth</option>
+                                    <option value="fleur">Fleur-de-Lis</option>
+                                    <option value="star">8-Point Star</option>
+                                    <option value="arrow">Arrow</option>
+                                    <option value="heart">Heart</option>
+                                    <option value="maze">Maze</option>
+                                    <option value="windowpane">Windowpane</option>
+                                    <option value="sawtooth">Sawtooth</option>
+                                    <option value="cathedral">Cathedral</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div id="densityGroup">
+                            <label for="density">
+                                <span id="densityLabelText">Pattern density</span>
+                                <input type="range" id="density" min="0" max="100" value="50">
+                            </label>
+                        </div>
+
+                        <details id="advancedPanel" class="panel">
+                            <summary>Advanced settings</summary>
+                            <div class="control-group" id="imageGroup" hidden>
+                                <label for="imgUpload">Upload image
+                                    <input type="file" id="imgUpload" accept="image/*" aria-describedby="imageHelp">
+                                </label>
+                                <p class="help-text" id="imageHelp">Image will be resized to fit the grid.</p>
+                            </div>
+
+                            <div class="control-group" id="algoOptions" hidden>
+                                <label for="wolframRule" id="wolframRuleLabel" hidden>Wolfram rule
+                                    <select id="wolframRule">
+                                        <option value="30">Rule 30</option>
+                                        <option value="90">Rule 90</option>
+                                        <option value="110">Rule 110</option>
+                                        <option value="150">Rule 150</option>
+                                        <option value="182">Rule 182</option>
+                                        <option value="45">Rule 45</option>
+                                        <option value="73">Rule 73</option>
+                                        <option value="105">Rule 105</option>
+                                    </select>
+                                </label>
+                                <label for="seedPattern" id="seedPatternLabel" hidden>Seed pattern
+                                    <select id="seedPattern">
+                                        <option value="center">Single center</option>
+                                        <option value="random">Random</option>
+                                        <option value="alternating">Alternating</option>
+                                        <option value="twoCells">Two cells</option>
+                                        <option value="edges">Both edges</option>
+                                    </select>
+                                </label>
+                                <label for="perlinScale" id="perlinScaleLabel" hidden>Noise scale
+                                    <select id="perlinScale">
+                                        <option value="fine">Fine (detailed)</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="large">Large (billowy)</option>
+                                        <option value="xlarge">Extra large (broad)</option>
+                                    </select>
+                                </label>
+                                <label for="waveCount" id="waveCountLabel" hidden>Number of waves
+                                    <select id="waveCount">
+                                        <option value="2">2 waves</option>
+                                        <option value="3" selected>3 waves</option>
+                                        <option value="4">4 waves</option>
+                                        <option value="5">5 waves</option>
+                                        <option value="7">7 waves</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div class="control-group" id="param2Group" hidden>
+                                <label for="param2">
+                                    <span id="param2LabelText">Secondary parameter</span>
+                                    <input type="range" id="param2" min="0" max="100" value="50">
+                                </label>
+                            </div>
+                        </details>
+                        <div class="control-group">
+                            <button id="generateBtn" type="button" class="btn">Generate</button>
+                            <button id="mutateBtn" type="button" class="btn">Mutate</button>
+                        </div>
+
+                        <details class="panel" aria-label="Chart legend">
+                            <summary>Chart legend</summary>
+                            <div class="legend-content">
+                                <p><span class="swatch" id="swatchA"></span> Color A</p>
+                                <p><span class="swatch" id="swatchB"></span> Color B</p>
+                                <p>This is a <strong>compressed chart</strong> — each chart row represents two
+                                    knitted rows (one right-side, one wrong-side) worked in the same color. Row
+                                    numbers show the right-side row (1, 3, 5…). The colored square beside each
+                                    number indicates which yarn is active. Colors alternate every two rows as
+                                    Walker describes.</p>
+                                <p>Read bottom-to-top. Right-side rows read right-to-left.</p>
+                            </div>
+                        </details>
+                    </aside>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="utils.js"></script>
+    <script src="patterns.js"></script>
+    <script src="ui-logic.js"></script>
+    <script src="algorithms.js"></script>
+    <script src="sketch.js"></script>
+
+    <script>
+        (function () {
+            var darkToggle = document.getElementById('darkModeToggle');
+            if (!darkToggle) return;
+            var saved = localStorage.getItem('darkMode');
+            if (saved === 'true') {
+                document.body.classList.add('dark-mode');
+                darkToggle.classList.add('active');
+                darkToggle.setAttribute('aria-checked', 'true');
+            }
+            darkToggle.addEventListener('click', function () {
+                var isDark = document.body.classList.toggle('dark-mode');
+                this.classList.toggle('active', isDark);
+                this.setAttribute('aria-checked', String(isDark));
+                localStorage.setItem('darkMode', String(isDark));
+            });
+        })();
+    </script>
+</body>
+
+</html>
