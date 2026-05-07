@@ -47,6 +47,15 @@ function safeParseInt(value, min, max, fallback) {
     return Math.max(min, Math.min(max, n));
 }
 
+/**
+ * Validates if a string is a valid CSS hex color.
+ * @param {string} c  The color string to validate
+ * @returns {boolean}
+ */
+function isValidHexColor(c) {
+    return /^#[0-9A-Fa-f]{6}$|^#[0-9A-Fa-f]{3}$/.test(c);
+}
+
 // ── Algorithm registry ───────────────────────────────────
 // Maps algorithm key → { fn, description, densityLabel, param2Label, setup }
 // Populated by algorithms.js; used by sketch.js and ui-logic.js
