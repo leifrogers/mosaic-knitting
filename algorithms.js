@@ -629,12 +629,13 @@ function algTruchet(cols, rows) {
             const tileType = random() < 0.5 ? 0 : 1; // 0 = /, 1 = \
 
             for (let y = 0; y < tileSize; y++) {
-                for (let x = 0; x < tileSize; x++) {
-                    const absR = r + y;
-                    const absC = c + x;
-                    if (absR >= rows || absC >= cols) continue;
+                const absR = r + y;
+                if (absR >= rows) continue;
+                const { active, inactive } = getRowColors(absR);
 
-                    const { active, inactive } = getRowColors(absR);
+                for (let x = 0; x < tileSize; x++) {
+                    const absC = c + x;
+                    if (absC >= cols) continue;
 
                     let filled = false;
                     // Simple diagonal line approximation
