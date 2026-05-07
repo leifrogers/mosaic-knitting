@@ -35,6 +35,7 @@
                             <button id="saveBtn" type="button" class="btn">Save PNG</button>
                             <button id="saveSvgBtn" type="button" class="btn">Save SVG</button>
                             <button id="savePdfBtn" type="button" class="btn">Save PDF</button>
+                            <button id="savePaletteBtn" type="button" class="btn">Save Palette</button>
                         </div>
                     </section>
 
@@ -98,6 +99,7 @@
                                     <option value="cellular">Cellular</option>
                                     <option value="wolfram">Wolfram CA</option>
                                     <option value="gameOfLife">Game of Life</option>
+                                    <option value="langton">Langton's Ant</option>
                                 </optgroup>
                                 <optgroup label="Fractals and curves">
                                     <option value="sierpinski">Sierpinski Triangle</option>
@@ -107,6 +109,8 @@
                                 </optgroup>
                                 <optgroup label="Constraint-based">
                                     <option value="wfc">Wave Function Collapse</option>
+                                    <option value="maze">Recursive Backtracker Maze</option>
+                                    <option value="hexagonal">Hexagonal / Honeycomb</option>
                                 </optgroup>
                                 <optgroup label="Inputs">
                                     <option value="image">Image Import (Dithering)</option>
@@ -181,7 +185,11 @@
                                         <option value="alternating">Alternating</option>
                                         <option value="twoCells">Two cells</option>
                                         <option value="edges">Both edges</option>
+                                        <option value="custom">Custom text string</option>
                                     </select>
+                                </label>
+                                <label for="customSeed" id="customSeedLabel" hidden>Custom seed text
+                                    <input type="text" id="customSeed" placeholder="Enter seed text...">
                                 </label>
                                 <label for="perlinScale" id="perlinScaleLabel" hidden>Noise scale
                                     <select id="perlinScale">
@@ -215,10 +223,14 @@
                         </div>
 
                         <details class="panel" aria-label="Chart legend">
-                            <summary>Chart legend</summary>
+                            <summary>Chart legend & Estimator</summary>
                             <div class="legend-content">
-                                <p><span class="swatch" id="swatchA"></span> Color A</p>
-                                <p><span class="swatch" id="swatchB"></span> Color B</p>
+                                <div class="stitch-counts" aria-live="polite">
+                                    <p><strong>Stitch Counts (Estimation)</strong></p>
+                                    <p><span class="swatch" id="swatchA"></span> Color A: <span id="countA">0</span> sts</p>
+                                    <p><span class="swatch" id="swatchB"></span> Color B: <span id="countB">0</span> sts</p>
+                                </div>
+                                <hr style="margin: 10px 0; border: 0; border-top: 1px solid var(--border);" />
                                 <p>This is a <strong>compressed chart</strong> — each chart row represents two
                                     knitted rows (one right-side, one wrong-side) worked in the same color. Row
                                     numbers show the right-side row (1, 3, 5…). The colored square beside each

@@ -147,6 +147,14 @@ function algCellular(cols, rows, opts) {
             g[0][0] = 1;
             g[0][cols - 1] = 1;
             break;
+        case 'custom':
+            const seedText = (opts && opts.customSeed) || '';
+            const hash = hashCode(seedText);
+            randomSeed(hash);
+            for (let c = 0; c < cols; c++) g[0][c] = random() < 0.5 ? 0 : 1;
+            // reset random seed
+            randomSeed(Math.random() * 100000);
+            break;
         default: // random
             for (let c = 0; c < cols; c++) g[0][c] = random() < 0.5 ? 0 : 1;
             break;
@@ -213,6 +221,14 @@ function algWolfram(cols, rows, opts) {
         case 'edges':
             g[0][0] = 1;
             g[0][cols - 1] = 1;
+            break;
+        case 'custom':
+            const seedTextW = (opts && opts.customSeed) || '';
+            const hashW = hashCode(seedTextW);
+            randomSeed(hashW);
+            for (let c = 0; c < cols; c++) g[0][c] = random() < 0.5 ? 1 : 0;
+            // reset random seed
+            randomSeed(Math.random() * 100000);
             break;
         default: // center
             g[0][Math.floor(cols / 2)] = 1;
@@ -382,6 +398,15 @@ function algGameOfLife(cols, rows) {
 
     // Initial state
     let current = [];
+    const seedType = (opts && opts.seedPattern) || 'random';
+
+    // Setup random seed if custom
+    if (seedType === 'custom') {
+        const seedTextGoL = (opts && opts.customSeed) || '';
+        const hashGoL = hashCode(seedTextGoL);
+        randomSeed(hashGoL);
+    }
+
     // Seed using density
     for (let r = 0; r < rows; r++) {
         current[r] = [];
@@ -389,6 +414,7 @@ function algGameOfLife(cols, rows) {
             current[r][c] = random() < density ? 1 : 0;
         }
     }
+    if (seedType === 'custom') randomSeed(Math.random() * 100000); // reset
 
     // Evolve
     for (let gen = 0; gen < generations; gen++) {
@@ -785,6 +811,7 @@ function mutatePattern() {
 
     const fullRaw = applySymmetry(source, wCols, wRows);
     grid = enforceMosaicConstraints(fullRaw, numCols, numRows);
+    if (typeof updateStitchCounts === "function") updateStitchCounts();
 }
 
 function enforceMosaicConstraints(raw, cols, rows) {
@@ -855,3 +882,148 @@ registerAlgorithm("dla", { fn: algDLA });
 registerAlgorithm("truchet", { fn: algTruchet });
 registerAlgorithm("classic", { fn: algClassic });
 registerAlgorithm("image", { fn: algImage });
+function algLangtonsAnt(cols, rows) {
+    const g = [];
+    for (let r = 0; r < rows; r++) {
+        g[r] = [];
+        const { active } = getRowColors(r);
+        for (let c = 0; c < cols; c++) {
+            g[r][c] = active;
+        }
+    }
+
+    let x = Math.floor(cols / 2);
+    let y = Math.floor(rows / 2);
+    let dir = 0; // 0: up, 1: right, 2: down, 3: left
+
+    const steps = Math.floor(map(density, 0, 1, 100, cols * rows * 5));
+
+    for (let i = 0; i < steps; i++) {
+        if (x < 0 || x >= cols || y < 0 || y >= rows) {
+            // Toroidal wrap
+            x = (x + cols) % cols;
+            y = (y + rows) % rows;
+        }
+
+        const { active, inactive } = getRowColors(y);
+        const isWhite = g[y][x] === active;
+
+        if (isWhite) {
+            dir = (dir + 1) % 4; // Turn right
+            g[y][x] = inactive;
+        } else {
+            dir = (dir + 3) % 4; // Turn left
+            g[y][x] = active;
+        }
+
+        // Move forward
+        if (dir === 0) y--;
+        else if (dir === 1) x++;
+        else if (dir === 2) y++;
+        else if (dir === 3) x--;
+    }
+
+    return g;
+}
+
+function algMaze(cols, rows) {
+    const g = [];
+    for (let r = 0; r < rows; r++) {
+        g[r] = [];
+        for (let c = 0; c < cols; c++) {
+            g[r][c] = 1; // Wall
+        }
+    }
+
+    const startX = 0;
+    const startY = 0;
+
+    // Recursive backtracker
+    const stack = [{x: startX, y: startY}];
+    g[startY][startX] = 0; // Path
+
+    // Convert to mosaic - map 0 (path) and 1 (wall) to active/inactive.
+    // However, maze generated here is raw, so we need to ensure paths map cleanly.
+
+    while (stack.length > 0) {
+        let current = stack[stack.length - 1];
+        let x = current.x;
+        let y = current.y;
+
+        const dirs = [];
+        // Directions are * 2 because we need a wall between paths
+        if (y > 1 && g[y - 2][x] === 1) dirs.push({dx: 0, dy: -2, wx: 0, wy: -1}); // Up
+        if (x < cols - 2 && g[y][x + 2] === 1) dirs.push({dx: 2, dy: 0, wx: 1, wy: 0}); // Right
+        if (y < rows - 2 && g[y + 2][x] === 1) dirs.push({dx: 0, dy: 2, wx: 0, wy: 1}); // Down
+        if (x > 1 && g[y][x - 2] === 1) dirs.push({dx: -2, dy: 0, wx: -1, wy: 0}); // Left
+
+        if (dirs.length > 0) {
+            // Randomly pick a direction
+            const dir = dirs[Math.floor(random(dirs.length))];
+
+            // Carve path
+            g[y + dir.wy][x + dir.wx] = 0;
+            g[y + dir.dy][x + dir.dx] = 0;
+
+            stack.push({x: x + dir.dx, y: y + dir.dy});
+        } else {
+            stack.pop();
+        }
+    }
+
+    // Now map 0/1 to active/inactive
+    const out = [];
+    for (let r = 0; r < rows; r++) {
+        out[r] = [];
+        const { active, inactive } = getRowColors(r);
+        for (let c = 0; c < cols; c++) {
+            // Use density to optionally add some noise or just map directly
+            out[r][c] = g[r][c] === 1 ? inactive : active;
+        }
+    }
+
+    return out;
+}
+
+function algHexagonal(cols, rows) {
+    const g = [];
+    // A simple approximation of hexagonal grid on an orthogonal grid
+    // by using a staggered brick pattern
+    const hexSize = Math.max(2, Math.round(5 * (1.1 - density)));
+
+    for (let r = 0; r < rows; r++) {
+        g[r] = [];
+        const { active, inactive } = getRowColors(r);
+        const offset = (Math.floor(r / hexSize) % 2) * hexSize;
+
+        for (let c = 0; c < cols; c++) {
+            const inHexX = (c + offset) % (hexSize * 2);
+            const inHexY = r % hexSize;
+
+            // Draw hexagonal outlines
+            let isEdge = false;
+
+            if (inHexY === 0 || inHexY === hexSize - 1) {
+                if (inHexX > hexSize / 2 && inHexX < hexSize * 1.5) {
+                    isEdge = true;
+                }
+            } else if (inHexX === 0 || inHexX === hexSize * 2 - 1) {
+                isEdge = true;
+            }
+            // Add diagonal approximation
+            else if (inHexX < hexSize / 2 || inHexX > hexSize * 1.5) {
+                const distToCenter = Math.abs(inHexY - hexSize / 2);
+                if (distToCenter > inHexX || distToCenter > (hexSize * 2 - inHexX)) {
+                    isEdge = true;
+                }
+            }
+
+            g[r][c] = isEdge ? inactive : active;
+        }
+    }
+    return g;
+}
+
+registerAlgorithm("langton", { fn: algLangtonsAnt });
+registerAlgorithm("maze", { fn: algMaze });
+registerAlgorithm("hexagonal", { fn: algHexagonal });

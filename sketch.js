@@ -48,6 +48,7 @@ function generatePattern() {
 
     const algoOpts = {
         seedPattern: (document.getElementById('seedPattern') || {}).value,
+        customSeed: (document.getElementById('customSeed') || {}).value,
         perlinScale: (document.getElementById('perlinScale') || {}).value,
         wolframRule: (document.getElementById('wolframRule') || {}).value,
         waveCount: (document.getElementById('waveCount') || {}).value
@@ -58,6 +59,29 @@ function generatePattern() {
 
     const fullRaw = applySymmetry(raw, wCols, wRows);
     grid = enforceMosaicConstraints(fullRaw, numCols, numRows);
+    updateStitchCounts();
+}
+
+function updateStitchCounts() {
+    let countA = 0;
+    let countB = 0;
+
+    for (let r = 0; r < numRows; r++) {
+        for (let c = 0; c < numCols; c++) {
+            if (grid[r][c] === 0) {
+                // Color A
+                countA += 2; // each chart row represents 2 knitted rows
+            } else {
+                // Color B
+                countB += 2;
+            }
+        }
+    }
+
+    const countAEl = document.getElementById("countA");
+    const countBEl = document.getElementById("countB");
+    if (countAEl) countAEl.textContent = countA;
+    if (countBEl) countBEl.textContent = countB;
 }
 
 function applySymmetry(source, w, h) {
