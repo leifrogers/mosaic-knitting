@@ -100,11 +100,15 @@ function setupUIHandlers() {
         const fontSize = cellSize * 0.6;
         const fontStyle = `font-family="sans-serif" font-size="${fontSize}px" text-anchor="middle" dominant-baseline="middle"`;
 
+        // Sanitize colors before SVG generation
+        const safeColorA = isValidHexColor(colorA) ? colorA : "#1a1a2e";
+        const safeColorB = isValidHexColor(colorB) ? colorB : "#90D5FF";
+
         for (let r = 0; r < numRows; r++) {
             const y = (numRows - 1 - r) * cellSize;
             const rowNum = r * 2 + 1;
             const { active } = getRowColors(r);
-            const activeColor = active === 0 ? colorA : colorB;
+            const activeColor = active === 0 ? safeColorA : safeColorB;
 
             svg += `<text x="-20" y="${y + cellSize / 2}" fill="black" ${fontStyle}>${rowNum}</text>`;
             svg += `<rect x="-10" y="${y + 4}" width="6" height="${cellSize - 8}" fill="${activeColor}" />`;
@@ -112,7 +116,7 @@ function setupUIHandlers() {
             for (let c = 0; c < numCols; c++) {
                 const x = c * cellSize;
                 const val = grid[r][c];
-                const cellColor = val === 1 ? colorB : colorA;
+                const cellColor = val === 1 ? safeColorB : safeColorA;
                 svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${cellColor}" stroke="#c8c8c8" stroke-width="1" />`;
 
                 if (val !== active) {
@@ -226,8 +230,11 @@ function readControlValues() {
     numCols = constrainValue("cols", 4, 60);
     numRows = constrainValue("rows", 4, 80);
     cellSize = constrainValue("cellSize", 8, 40);
-    colorA = document.getElementById("colorA").value;
-    colorB = document.getElementById("colorB").value;
+
+    const valA = document.getElementById("colorA").value;
+    const valB = document.getElementById("colorB").value;
+    colorA = isValidHexColor(valA) ? valA : "#1a1a2e";
+    colorB = isValidHexColor(valB) ? valB : "#90D5FF";
 
     const dEl = document.getElementById("density");
     density = dEl ? int(dEl.value) / 100 : 0.5;
