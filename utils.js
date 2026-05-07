@@ -56,6 +56,17 @@ function isValidHexColor(c) {
     return /^#[0-9A-Fa-f]{6}$|^#[0-9A-Fa-f]{3}$/.test(c);
 }
 
+function hashCode(str) {
+    let hash = 0;
+    if (str.length === 0) return hash;
+    for (let i = 0; i < str.length; i++) {
+        let chr = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0;
+    }
+    return Math.abs(hash);
+}
+
 // ── Algorithm registry ───────────────────────────────────
 // Maps algorithm key → { fn, description, densityLabel, param2Label, setup }
 // Populated by algorithms.js; used by sketch.js and ui-logic.js
@@ -104,7 +115,10 @@ const ALGO_DESCRIPTIONS = {
     spiral: "Archimedean spirals radiating from center.",
     mandelbrot: "The boundary of the Mandelbrot set fractal.",
     dla: "Diffusion-Limited Aggregation: particles form coral-like structures.",
-    truchet: "Randomly oriented tiles forming maze-like paths."
+    truchet: "Randomly oriented tiles forming maze-like paths.",
+    langton: "Langton's Ant. Density controls number of steps.",
+    maze: "Perfect maze generated with Recursive Backtracker.",
+    hexagonal: "Staggered approximation of a hexagonal honeycomb grid."
 };
 
 const DENSITY_LABELS = {
@@ -125,7 +139,9 @@ const DENSITY_LABELS = {
     spiral: "Number of arms",
     mandelbrot: "Zoom level",
     dla: "Particle density",
-    truchet: "Tile size"
+    truchet: "Tile size",
+    langton: "Ant steps",
+    hexagonal: "Hexagon scale"
 };
 
 const PARAM2_LABELS = {

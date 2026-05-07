@@ -11,7 +11,9 @@ function setupUIHandlers() {
     document.getElementById("swapColorsBtn").addEventListener("click", () => {
         const a = document.getElementById("colorA");
         const b = document.getElementById("colorB");
-        [a.value, b.value] = [b.value, a.value];
+        const temp = a.value;
+        a.value = b.value;
+        b.value = temp;
         readControlValues();
         updateSwatches();
         redraw();
@@ -25,6 +27,20 @@ function setupUIHandlers() {
         updateSwatches();
         redraw();
     });
+
+    document.getElementById("seedPattern").addEventListener("change", (e) => {
+        const customSeedLabel = document.getElementById("customSeedLabel");
+        if (customSeedLabel) customSeedLabel.hidden = e.target.value !== "custom";
+        readControls();
+        generatePattern();
+        redraw();
+    });
+
+    document.getElementById("customSeed").addEventListener("input", debounce(() => {
+        readControls();
+        generatePattern();
+        redraw();
+    }, 500));
 
     document.getElementById("imgUpload").onchange = (e) => {
         const file = e.target.files[0];
@@ -121,6 +137,19 @@ function setupUIHandlers() {
         const a = document.createElement("a");
         a.href = url;
         a.download = "mosaic-pattern.svg";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("savePaletteBtn").addEventListener("click", () => {
+        const paletteText = `Color A: ${colorA}\nColor B: ${colorB}`;
+        const blob = new Blob([paletteText], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "mosaic-palette.txt";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -231,6 +260,7 @@ function updateAlgoUI() {
     const algoOptions = document.getElementById("algoOptions");
     const wolframRuleLabel = document.getElementById("wolframRuleLabel");
     const seedPatternLabel = document.getElementById("seedPatternLabel");
+    const customSeedLabel = document.getElementById("customSeedLabel");
     const perlinScaleLabel = document.getElementById("perlinScaleLabel");
     const waveCountLabel = document.getElementById("waveCountLabel");
     const densityLabelText = document.getElementById("densityLabelText");
@@ -243,6 +273,7 @@ function updateAlgoUI() {
     algoOptions.hidden = true;
     wolframRuleLabel.hidden = true;
     seedPatternLabel.hidden = true;
+    if (customSeedLabel) customSeedLabel.hidden = true;
     perlinScaleLabel.hidden = true;
     waveCountLabel.hidden = true;
     densityGroup.hidden = false;
@@ -273,10 +304,12 @@ function updateAlgoUI() {
         algoOptions.hidden = false;
         wolframRuleLabel.hidden = false;
         seedPatternLabel.hidden = false;
+        if (customSeedLabel && document.getElementById("seedPattern").value === "custom") customSeedLabel.hidden = false;
         densityGroup.hidden = true;
     } else if (algorithm === "cellular") {
         algoOptions.hidden = false;
         seedPatternLabel.hidden = false;
+        if (customSeedLabel && document.getElementById("seedPattern").value === "custom") customSeedLabel.hidden = false;
     } else if (algorithm === "perlin") {
         algoOptions.hidden = false;
         perlinScaleLabel.hidden = false;
@@ -290,6 +323,7 @@ function updateAlgoUI() {
     } else if (algorithm === "gameOfLife") {
         algoOptions.hidden = false;
         seedPatternLabel.hidden = false;
+        if (customSeedLabel && document.getElementById("seedPattern").value === "custom") customSeedLabel.hidden = false;
     }
 
     const hasAdvancedOptions = !imageGroup.hidden || !algoOptions.hidden || !param2Group.hidden;
