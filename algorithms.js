@@ -392,7 +392,7 @@ function algReactionDiffusion(cols, rows) {
 }
 
 /** Game of Life */
-function algGameOfLife(cols, rows) {
+function algGameOfLife(cols, rows, opts) {
     // Map param2 (0-100) to generations (0-200)
     const generations = Math.floor(map(param2, 0, 100, 0, 200));
 
@@ -972,13 +972,47 @@ function algMaze(cols, rows) {
         }
     }
 
-    // Now map 0/1 to active/inactive
+    // Density mapping (two-way):
+    //   density > 0.5 → knock out extra walls (more open / chamber-like)
+    //   density < 0.5 → prune dead ends (longer corridors, fewer offshoots)
+    //   density ≈ 0.5 → classic perfect maze
+    if (density > 0.5) {
+        const extraOpenProb = (density - 0.5) * 2 * 0.4;
+        for (let r = 1; r < rows - 1; r++) {
+            for (let c = 1; c < cols - 1; c++) {
+                if (g[r][c] === 1 && random() < extraOpenProb) {
+                    g[r][c] = 0;
+                }
+            }
+        }
+    } else if (density < 0.5) {
+        const pruneStrength = (0.5 - density) * 2;
+        const passes = Math.round(pruneStrength * Math.max(rows, cols));
+        for (let p = 0; p < passes; p++) {
+            let pruned = false;
+            for (let r = 1; r < rows - 1; r++) {
+                for (let c = 1; c < cols - 1; c++) {
+                    if (g[r][c] !== 0) continue;
+                    let openNeighbors = 0;
+                    if (g[r - 1][c] === 0) openNeighbors++;
+                    if (g[r + 1][c] === 0) openNeighbors++;
+                    if (g[r][c - 1] === 0) openNeighbors++;
+                    if (g[r][c + 1] === 0) openNeighbors++;
+                    if (openNeighbors <= 1) {
+                        g[r][c] = 1;
+                        pruned = true;
+                    }
+                }
+            }
+            if (!pruned) break;
+        }
+    }
+
     const out = [];
     for (let r = 0; r < rows; r++) {
         out[r] = [];
         const { active, inactive } = getRowColors(r);
         for (let c = 0; c < cols; c++) {
-            // Use density to optionally add some noise or just map directly
             out[r][c] = g[r][c] === 1 ? inactive : active;
         }
     }

@@ -1,5 +1,19 @@
 // ── Shared constants and helpers ──────────────────────────
 
+/**
+ * Debounce a function so it only fires after `ms` of quiet time.
+ * @param {Function} fn  Function to debounce
+ * @param {number} ms    Wait period in milliseconds
+ * @returns {Function}
+ */
+function debounce(fn, ms = 150) {
+    let t;
+    return function (...args) {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), ms);
+    };
+}
+
 // Layout constants — single source of truth for chart margins and padding
 const MARGIN_LEFT = 40;
 const MARGIN_TOP = 20;
