@@ -47,6 +47,18 @@ function safeParseInt(value, min, max, fallback) {
     return Math.max(min, Math.min(max, n));
 }
 
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 function hashCode(str) {
     let hash = 0;
     if (str.length === 0) return hash;
