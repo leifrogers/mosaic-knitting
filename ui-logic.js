@@ -1,225 +1,238 @@
+function handleGenerateClick() {
+    readControls();
+    generatePattern();
+    const sz = canvasSize(numCols, numRows, cellSize);
+    resizeCanvas(sz.width, sz.height);
+    updateSwatches();
+    redraw();
+}
+
+function handleSwapColorsClick() {
+    const a = document.getElementById("colorA");
+    const b = document.getElementById("colorB");
+    const temp = a.value;
+    a.value = b.value;
+    b.value = temp;
+    readControlValues();
+    updateSwatches();
+    redraw();
+}
+
+function handleMutateClick() {
+    readControls();
+    mutatePattern();
+    const sz = canvasSize(numCols, numRows, cellSize);
+    resizeCanvas(sz.width, sz.height);
+    updateSwatches();
+    redraw();
+}
+
+function handleSeedPatternChange(e) {
+    const customSeedLabel = document.getElementById("customSeedLabel");
+    if (customSeedLabel) customSeedLabel.hidden = e.target.value !== "custom";
+    readControls();
+    generatePattern();
+    redraw();
+}
+
+function handleCustomSeedInput() {
+    readControls();
+    generatePattern();
+    redraw();
+}
+
+function handleImgUploadChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+        console.warn("Skipped non-image file:", file.type);
+        return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    loadImage(
+        objectUrl,
+        (img) => {
+            uploadedImg = img;
+            if (algorithm === "image") {
+                generatePattern();
+                const sz = canvasSize(numCols, numRows, cellSize);
+                resizeCanvas(sz.width, sz.height);
+                redraw();
+            }
+        },
+        () => {
+            console.error("Failed to load image file.");
+            URL.revokeObjectURL(objectUrl);
+        }
+    );
+}
+
+function handleSymmetryModeChange() {
+    readControls();
+    generatePattern();
+    const sz = canvasSize(numCols, numRows, cellSize);
+    resizeCanvas(sz.width, sz.height);
+    redraw();
+}
+
+function handleAlgorithmChange() {
+    readControls();
+}
+
+function handleSaveClick() {
+    saveCanvas("mosaic-pattern", "png");
+}
+
+function handleSaveSvgClick() {
+    const mx = MARGIN_LEFT;
+    const my = MARGIN_TOP;
+    const sz = canvasSize(numCols, numRows, cellSize);
+    const w = sz.width;
+    const h = sz.height;
+
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+
+    svg += `<rect x="0" y="0" width="${w}" height="${h}" fill="white" />`;
+    svg += `<g transform="translate(${mx}, ${my})">`;
+
+    svg += `<rect x="0" y="0" width="${numCols * cellSize}" height="${numRows * cellSize}" fill="none" stroke="black" stroke-width="2" />`;
+    const fontSize = cellSize * 0.6;
+    const fontStyle = `font-family="sans-serif" font-size="${fontSize}px" text-anchor="middle" dominant-baseline="middle"`;
+
+    // Sanitize colors before SVG generation
+    const safeColorA = isValidHexColor(colorA) ? colorA : "#1a1a2e";
+    const safeColorB = isValidHexColor(colorB) ? colorB : "#90D5FF";
+
+    for (let r = 0; r < numRows; r++) {
+        const y = (numRows - 1 - r) * cellSize;
+        const rowNum = r * 2 + 1;
+        const { active } = getRowColors(r);
+        const activeColor = active === 0 ? safeColorA : safeColorB;
+
+        svg += `<text x="-20" y="${y + cellSize / 2}" fill="black" ${fontStyle}>${rowNum}</text>`;
+        svg += `<rect x="-10" y="${y + 4}" width="6" height="${cellSize - 8}" fill="${activeColor}" />`;
+
+        for (let c = 0; c < numCols; c++) {
+            const x = c * cellSize;
+            const val = grid[r][c];
+            const cellColor = val === 1 ? safeColorB : safeColorA;
+            svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${cellColor}" stroke="#c8c8c8" stroke-width="1" />`;
+
+            if (val !== active) {
+                const dotFill = val === 0 ? "white" : "black";
+                const dotOpacity = 0.4;
+                const cx = x + cellSize / 2;
+                const cy = y + cellSize / 2;
+                const rDot = (cellSize * 0.3) / 2;
+                svg += `<circle cx="${cx}" cy="${cy}" r="${rDot}" fill="${dotFill}" fill-opacity="${dotOpacity}" stroke="none" />`;
+            }
+        }
+    }
+
+    svg += `</g></svg>`;
+
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mosaic-pattern.svg";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function handleSavePaletteClick() {
+    const paletteText = `Color A: ${colorA}\nColor B: ${colorB}`;
+    const blob = new Blob([paletteText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mosaic-palette.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function handleSavePdfClick() {
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+            orientation: "portrait",
+            unit: "mm",
+            format: "a4"
+        });
+
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 15;
+        const printWidth = pageWidth - (margin * 2);
+
+        doc.setFontSize(22);
+        doc.text("Mosaic Knitting Pattern", margin, 20);
+
+        doc.setFontSize(12);
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 30);
+
+        doc.setFontSize(10);
+        let metaY = 40;
+        const settings = [
+            `Stitches: ${numCols}`,
+            `Rows: ${numRows}`,
+            `Algorithm: ${algorithm}`,
+            `Symmetry: ${symmetryMode}`
+        ];
+        settings.forEach(s => {
+            doc.text(s, margin, metaY);
+            metaY += 5;
+        });
+
+        const canvas = document.querySelector("#sketch-holder canvas");
+        const imgData = canvas.toDataURL("image/png");
+
+        const imgProps = doc.getImageProperties(imgData);
+        const imgHeight = (imgProps.height * printWidth) / imgProps.width;
+
+        doc.addImage(imgData, 'PNG', margin, metaY + 5, printWidth, imgHeight);
+
+        const keyY = metaY + imgHeight + 15;
+        doc.setFontSize(14);
+        doc.text("Key", margin, keyY);
+
+        doc.autoTable({
+            startY: keyY + 5,
+            head: [['Symbol', 'Instruction']],
+            body: [
+                ['Black Square (Active Color)', 'Knit'],
+                ['White Square (Inactive Color)', 'Slip 1 (with yarn in back)'],
+                ['Row Number', 'Indicates Right Side (RS) row.'],
+                ['Side Block', 'Indicates Active Color for the row pair.']
+            ],
+            theme: 'plain',
+            styles: { fontSize: 10 },
+            headStyles: { fontStyle: 'bold' },
+            margin: { left: margin }
+        });
+
+        doc.save("mosaic-pattern.pdf");
+    } catch (err) {
+        console.error("PDF export failed:", err);
+    }
+}
+
 function setupUIHandlers() {
-    document.getElementById("generateBtn").addEventListener("click", () => {
-        readControls();
-        generatePattern();
-        const sz = canvasSize(numCols, numRows, cellSize);
-        resizeCanvas(sz.width, sz.height);
-        updateSwatches();
-        redraw();
-    });
-
-    document.getElementById("swapColorsBtn").addEventListener("click", () => {
-        const a = document.getElementById("colorA");
-        const b = document.getElementById("colorB");
-        const temp = a.value;
-        a.value = b.value;
-        b.value = temp;
-        readControlValues();
-        updateSwatches();
-        redraw();
-    });
-
-    document.getElementById("mutateBtn").addEventListener("click", () => {
-        readControls();
-        mutatePattern();
-        const sz = canvasSize(numCols, numRows, cellSize);
-        resizeCanvas(sz.width, sz.height);
-        updateSwatches();
-        redraw();
-    });
-
-    document.getElementById("seedPattern").addEventListener("change", (e) => {
-        const customSeedLabel = document.getElementById("customSeedLabel");
-        if (customSeedLabel) customSeedLabel.hidden = e.target.value !== "custom";
-        readControls();
-        generatePattern();
-        redraw();
-    });
-
-    document.getElementById("customSeed").addEventListener("input", debounce(() => {
-        readControls();
-        generatePattern();
-        redraw();
-    }, 500));
-
-    document.getElementById("imgUpload").onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        if (!file.type.startsWith("image/")) {
-            console.warn("Skipped non-image file:", file.type);
-            return;
-        }
-        const objectUrl = URL.createObjectURL(file);
-        loadImage(
-            objectUrl,
-            (img) => {
-                uploadedImg = img;
-                if (algorithm === "image") {
-                    generatePattern();
-                    const sz = canvasSize(numCols, numRows, cellSize);
-                    resizeCanvas(sz.width, sz.height);
-                    redraw();
-                }
-            },
-            () => {
-                console.error("Failed to load image file.");
-                URL.revokeObjectURL(objectUrl);
-            }
-        );
-    };
-
-    document.getElementById("symmetryMode").addEventListener("change", () => {
-        readControls();
-        generatePattern();
-        const sz = canvasSize(numCols, numRows, cellSize);
-        resizeCanvas(sz.width, sz.height);
-        redraw();
-    });
-
-    document.getElementById("algorithm").addEventListener("change", () => {
-        readControls();
-    });
-
-    document.getElementById("saveBtn").addEventListener("click", () => {
-        saveCanvas("mosaic-pattern", "png");
-    });
-
-    document.getElementById("saveSvgBtn").addEventListener("click", () => {
-        const mx = MARGIN_LEFT;
-        const my = MARGIN_TOP;
-        const sz = canvasSize(numCols, numRows, cellSize);
-        const w = sz.width;
-        const h = sz.height;
-
-        let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
-
-        svg += `<rect x="0" y="0" width="${w}" height="${h}" fill="white" />`;
-        svg += `<g transform="translate(${mx}, ${my})">`;
-
-        svg += `<rect x="0" y="0" width="${numCols * cellSize}" height="${numRows * cellSize}" fill="none" stroke="black" stroke-width="2" />`;
-        const fontSize = cellSize * 0.6;
-        const fontStyle = `font-family="sans-serif" font-size="${fontSize}px" text-anchor="middle" dominant-baseline="middle"`;
-
-        // Sanitize colors before SVG generation
-        const safeColorA = isValidHexColor(colorA) ? colorA : "#1a1a2e";
-        const safeColorB = isValidHexColor(colorB) ? colorB : "#90D5FF";
-
-        for (let r = 0; r < numRows; r++) {
-            const y = (numRows - 1 - r) * cellSize;
-            const rowNum = r * 2 + 1;
-            const { active } = getRowColors(r);
-            const activeColor = active === 0 ? safeColorA : safeColorB;
-
-            svg += `<text x="-20" y="${y + cellSize / 2}" fill="black" ${fontStyle}>${rowNum}</text>`;
-            svg += `<rect x="-10" y="${y + 4}" width="6" height="${cellSize - 8}" fill="${activeColor}" />`;
-
-            for (let c = 0; c < numCols; c++) {
-                const x = c * cellSize;
-                const val = grid[r][c];
-                const cellColor = val === 1 ? safeColorB : safeColorA;
-                svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${cellColor}" stroke="#c8c8c8" stroke-width="1" />`;
-
-                if (val !== active) {
-                    const dotFill = val === 0 ? "white" : "black";
-                    const dotOpacity = 0.4;
-                    const cx = x + cellSize / 2;
-                    const cy = y + cellSize / 2;
-                    const rDot = (cellSize * 0.3) / 2;
-                    svg += `<circle cx="${cx}" cy="${cy}" r="${rDot}" fill="${dotFill}" fill-opacity="${dotOpacity}" stroke="none" />`;
-                }
-            }
-        }
-
-        svg += `</g></svg>`;
-
-        const blob = new Blob([svg], { type: "image/svg+xml" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "mosaic-pattern.svg";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-
-    document.getElementById("savePaletteBtn").addEventListener("click", () => {
-        const paletteText = `Color A: ${colorA}\nColor B: ${colorB}`;
-        const blob = new Blob([paletteText], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "mosaic-palette.txt";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-
-    document.getElementById("savePdfBtn").addEventListener("click", () => {
-        try {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({
-                orientation: "portrait",
-                unit: "mm",
-                format: "a4"
-            });
-
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const margin = 15;
-            const printWidth = pageWidth - (margin * 2);
-
-            doc.setFontSize(22);
-            doc.text("Mosaic Knitting Pattern", margin, 20);
-
-            doc.setFontSize(12);
-            doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 30);
-
-            doc.setFontSize(10);
-            let metaY = 40;
-            const settings = [
-                `Stitches: ${numCols}`,
-                `Rows: ${numRows}`,
-                `Algorithm: ${algorithm}`,
-                `Symmetry: ${symmetryMode}`
-            ];
-            settings.forEach(s => {
-                doc.text(s, margin, metaY);
-                metaY += 5;
-            });
-
-            const canvas = document.querySelector("#sketch-holder canvas");
-            const imgData = canvas.toDataURL("image/png");
-
-            const imgProps = doc.getImageProperties(imgData);
-            const imgHeight = (imgProps.height * printWidth) / imgProps.width;
-
-            doc.addImage(imgData, 'PNG', margin, metaY + 5, printWidth, imgHeight);
-
-            const keyY = metaY + imgHeight + 15;
-            doc.setFontSize(14);
-            doc.text("Key", margin, keyY);
-
-            doc.autoTable({
-                startY: keyY + 5,
-                head: [['Symbol', 'Instruction']],
-                body: [
-                    ['Black Square (Active Color)', 'Knit'],
-                    ['White Square (Inactive Color)', 'Slip 1 (with yarn in back)'],
-                    ['Row Number', 'Indicates Right Side (RS) row.'],
-                    ['Side Block', 'Indicates Active Color for the row pair.']
-                ],
-                theme: 'plain',
-                styles: { fontSize: 10 },
-                headStyles: { fontStyle: 'bold' },
-                margin: { left: margin }
-            });
-
-            doc.save("mosaic-pattern.pdf");
-        } catch (err) {
-            console.error("PDF export failed:", err);
-        }
-    });
+    document.getElementById("generateBtn").addEventListener("click", handleGenerateClick);
+    document.getElementById("swapColorsBtn").addEventListener("click", handleSwapColorsClick);
+    document.getElementById("mutateBtn").addEventListener("click", handleMutateClick);
+    document.getElementById("seedPattern").addEventListener("change", handleSeedPatternChange);
+    document.getElementById("customSeed").addEventListener("input", debounce(handleCustomSeedInput, 500));
+    document.getElementById("imgUpload").onchange = handleImgUploadChange;
+    document.getElementById("symmetryMode").addEventListener("change", handleSymmetryModeChange);
+    document.getElementById("algorithm").addEventListener("change", handleAlgorithmChange);
+    document.getElementById("saveBtn").addEventListener("click", handleSaveClick);
+    document.getElementById("saveSvgBtn").addEventListener("click", handleSaveSvgClick);
+    document.getElementById("savePaletteBtn").addEventListener("click", handleSavePaletteClick);
+    document.getElementById("savePdfBtn").addEventListener("click", handleSavePdfClick);
 }
 function readControls() {
     readControlValues();
