@@ -300,12 +300,13 @@ function algVoronoi(cols, rows) {
             color: i % 2
         });
     }
+    const sLen = seeds.length;
     for (let r = 0; r < rows; r++) {
         g[r] = [];
         for (let c = 0; c < cols; c++) {
             let minDist = Infinity;
             let nearest = 0;
-            for (let i = 0; i < seeds.length; i++) {
+            for (let i = 0; i < sLen; i++) {
                 const dx = c - seeds[i].x;
                 const dy = r - seeds[i].y;
                 const d = dx * dx + dy * dy;
@@ -763,9 +764,10 @@ function algWFC(cols, rows) {
     const g = [];
     for (let r = 0; r < rows; r++) g[r] = new Array(cols).fill(0);
 
+    const tLen = tiles.length;
     for (let r = 0; r < rows - 2; r += 3) {
         for (let c = 0; c < cols - 2; c += 3) {
-            const tileIdx = Math.floor(random(tiles.length));
+            const tileIdx = Math.floor(random(tLen));
             const tile = tiles[tileIdx];
             for (let y = 0; y < 3; y++) {
                 for (let x = 0; x < 3; x++) {
