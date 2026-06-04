@@ -164,3 +164,19 @@ const PARAM2_LABELS = {
     lissajous: "Number of curves",
     mandelbrot: "Max iterations"
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        debounce,
+        canvasSize,
+        getRowColors,
+        safeParseInt,
+        isValidHexColor,
+        hashCode,
+        registerAlgorithm,
+        ALGORITHM_REGISTRY,
+        ALGO_DESCRIPTIONS,
+        DENSITY_LABELS,
+        PARAM2_LABELS
+    };
+}
