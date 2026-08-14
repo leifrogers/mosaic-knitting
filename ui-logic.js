@@ -155,65 +155,70 @@ function handleSavePaletteClick() {
     URL.revokeObjectURL(url);
 }
 
+function buildPdfDocument() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const printWidth = pageWidth - (margin * 2);
+
+    doc.setFontSize(22);
+    doc.text("Mosaic Knitting Pattern", margin, 20);
+
+    doc.setFontSize(12);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 30);
+
+    doc.setFontSize(10);
+    let metaY = 40;
+    const settings = [
+        `Stitches: ${numCols}`,
+        `Rows: ${numRows}`,
+        `Algorithm: ${algorithm}`,
+        `Symmetry: ${symmetryMode}`
+    ];
+    settings.forEach(s => {
+        doc.text(s, margin, metaY);
+        metaY += 5;
+    });
+
+    const canvas = document.querySelector("#sketch-holder canvas");
+    const imgData = canvas.toDataURL("image/png");
+
+    const imgProps = doc.getImageProperties(imgData);
+    const imgHeight = (imgProps.height * printWidth) / imgProps.width;
+
+    doc.addImage(imgData, 'PNG', margin, metaY + 5, printWidth, imgHeight);
+
+    const keyY = metaY + imgHeight + 15;
+    doc.setFontSize(14);
+    doc.text("Key", margin, keyY);
+
+    doc.autoTable({
+        startY: keyY + 5,
+        head: [['Symbol', 'Instruction']],
+        body: [
+            ['Black Square (Active Color)', 'Knit'],
+            ['White Square (Inactive Color)', 'Slip 1 (with yarn in back)'],
+            ['Row Number', 'Indicates Right Side (RS) row.'],
+            ['Side Block', 'Indicates Active Color for the row pair.']
+        ],
+        theme: 'plain',
+        styles: { fontSize: 10 },
+        headStyles: { fontStyle: 'bold' },
+        margin: { left: margin }
+    });
+
+    return doc;
+}
+
 function handleSavePdfClick() {
     try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({
-            orientation: "portrait",
-            unit: "mm",
-            format: "a4"
-        });
-
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 15;
-        const printWidth = pageWidth - (margin * 2);
-
-        doc.setFontSize(22);
-        doc.text("Mosaic Knitting Pattern", margin, 20);
-
-        doc.setFontSize(12);
-        doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 30);
-
-        doc.setFontSize(10);
-        let metaY = 40;
-        const settings = [
-            `Stitches: ${numCols}`,
-            `Rows: ${numRows}`,
-            `Algorithm: ${algorithm}`,
-            `Symmetry: ${symmetryMode}`
-        ];
-        settings.forEach(s => {
-            doc.text(s, margin, metaY);
-            metaY += 5;
-        });
-
-        const canvas = document.querySelector("#sketch-holder canvas");
-        const imgData = canvas.toDataURL("image/png");
-
-        const imgProps = doc.getImageProperties(imgData);
-        const imgHeight = (imgProps.height * printWidth) / imgProps.width;
-
-        doc.addImage(imgData, 'PNG', margin, metaY + 5, printWidth, imgHeight);
-
-        const keyY = metaY + imgHeight + 15;
-        doc.setFontSize(14);
-        doc.text("Key", margin, keyY);
-
-        doc.autoTable({
-            startY: keyY + 5,
-            head: [['Symbol', 'Instruction']],
-            body: [
-                ['Black Square (Active Color)', 'Knit'],
-                ['White Square (Inactive Color)', 'Slip 1 (with yarn in back)'],
-                ['Row Number', 'Indicates Right Side (RS) row.'],
-                ['Side Block', 'Indicates Active Color for the row pair.']
-            ],
-            theme: 'plain',
-            styles: { fontSize: 10 },
-            headStyles: { fontStyle: 'bold' },
-            margin: { left: margin }
-        });
-
+        const doc = buildPdfDocument();
         doc.save("mosaic-pattern.pdf");
     } catch (err) {
         console.error("PDF export failed:", err);
