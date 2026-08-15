@@ -132,27 +132,13 @@ function handleSaveSvgClick() {
     svg += `</g></svg>`;
 
     const blob = new Blob([svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "mosaic-pattern.svg";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, "mosaic-pattern.svg");
 }
 
 function handleSavePaletteClick() {
     const paletteText = `Color A: ${colorA}\nColor B: ${colorB}`;
     const blob = new Blob([paletteText], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "mosaic-palette.txt";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, "mosaic-palette.txt");
 }
 
 function buildPdfDocument() {
