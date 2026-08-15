@@ -83,10 +83,10 @@ function handleSaveClick() {
     saveCanvas("mosaic-pattern", "png");
 }
 
-function handleSaveSvgClick() {
+function generateSvg(cols, rows, cellSize, colors, grid) {
     const mx = MARGIN_LEFT;
     const my = MARGIN_TOP;
-    const sz = canvasSize(numCols, numRows, cellSize);
+    const sz = canvasSize(cols, rows, cellSize);
     const w = sz.width;
     const h = sz.height;
 
@@ -95,16 +95,16 @@ function handleSaveSvgClick() {
     svg += `<rect x="0" y="0" width="${w}" height="${h}" fill="white" />`;
     svg += `<g transform="translate(${mx}, ${my})">`;
 
-    svg += `<rect x="0" y="0" width="${numCols * cellSize}" height="${numRows * cellSize}" fill="none" stroke="black" stroke-width="2" />`;
+    svg += `<rect x="0" y="0" width="${cols * cellSize}" height="${rows * cellSize}" fill="none" stroke="black" stroke-width="2" />`;
     const fontSize = cellSize * 0.6;
     const fontStyle = `font-family="sans-serif" font-size="${fontSize}px" text-anchor="middle" dominant-baseline="middle"`;
 
     // Sanitize colors before SVG generation
-    const safeColorA = isValidHexColor(colorA) ? colorA : "#1a1a2e";
-    const safeColorB = isValidHexColor(colorB) ? colorB : "#90D5FF";
+    const safeColorA = isValidHexColor(colors.colorA) ? colors.colorA : "#1a1a2e";
+    const safeColorB = isValidHexColor(colors.colorB) ? colors.colorB : "#90D5FF";
 
-    for (let r = 0; r < numRows; r++) {
-        const y = (numRows - 1 - r) * cellSize;
+    for (let r = 0; r < rows; r++) {
+        const y = (rows - 1 - r) * cellSize;
         const rowNum = r * 2 + 1;
         const { active } = getRowColors(r);
         const activeColor = active === 0 ? safeColorA : safeColorB;
@@ -112,7 +112,7 @@ function handleSaveSvgClick() {
         svg += `<text x="-20" y="${y + cellSize / 2}" fill="black" ${fontStyle}>${rowNum}</text>`;
         svg += `<rect x="-10" y="${y + 4}" width="6" height="${cellSize - 8}" fill="${activeColor}" />`;
 
-        for (let c = 0; c < numCols; c++) {
+        for (let c = 0; c < cols; c++) {
             const x = c * cellSize;
             const val = grid[r][c];
             const cellColor = val === 1 ? safeColorB : safeColorA;
@@ -130,7 +130,11 @@ function handleSaveSvgClick() {
     }
 
     svg += `</g></svg>`;
+    return svg;
+}
 
+function handleSaveSvgClick() {
+    const svg = generateSvg(numCols, numRows, cellSize, { colorA, colorB }, grid);
     const blob = new Blob([svg], { type: "image/svg+xml" });
     downloadBlob(blob, "mosaic-pattern.svg");
 }
