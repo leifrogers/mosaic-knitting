@@ -125,40 +125,53 @@ function algBasket(cols, rows) {
     return g;
 }
 
-/** Cellular automaton — totalistic evolution from a configurable seed row */
-function algCellular(cols, rows, opts) {
-    const g = [];
-    const seedType = (opts && opts.seedPattern) || 'random';
-    // Seed the first row based on selected pattern
-    g[0] = [];
-    for (let c = 0; c < cols; c++) g[0][c] = 0;
-    switch (seedType) {
+/**
+ * Helper to initialize a seed row based on seedType.
+ * Returns an array of size cols initialized with 0s and 1s.
+ */
+function initializeSeedRow(cols, seedType, opts, defaultSeed = 'random') {
+    const row = [];
+    for (let c = 0; c < cols; c++) row[c] = 0;
+    const actualSeedType = seedType || defaultSeed;
+
+    switch (actualSeedType) {
         case 'center':
-            g[0][Math.floor(cols / 2)] = 1;
+            row[Math.floor(cols / 2)] = 1;
             break;
         case 'alternating':
-            for (let c = 0; c < cols; c++) g[0][c] = c % 2;
+            for (let c = 0; c < cols; c++) row[c] = c % 2;
             break;
         case 'twoCells':
-            g[0][Math.floor(cols / 3)] = 1;
-            g[0][Math.floor(2 * cols / 3)] = 1;
+            row[Math.floor(cols / 3)] = 1;
+            row[Math.floor(2 * cols / 3)] = 1;
             break;
         case 'edges':
-            g[0][0] = 1;
-            g[0][cols - 1] = 1;
+            row[0] = 1;
+            row[cols - 1] = 1;
             break;
         case 'custom':
             const seedText = (opts && opts.customSeed) || '';
             const hash = hashCode(seedText);
             randomSeed(hash);
-            for (let c = 0; c < cols; c++) g[0][c] = random() < 0.5 ? 0 : 1;
+            for (let c = 0; c < cols; c++) row[c] = random() < 0.5 ? 0 : 1;
             // reset random seed
             randomSeed(Math.random() * 100000);
             break;
-        default: // random
-            for (let c = 0; c < cols; c++) g[0][c] = random() < 0.5 ? 0 : 1;
+        case 'random':
+        default:
+            for (let c = 0; c < cols; c++) row[c] = random() < 0.5 ? 0 : 1;
             break;
     }
+    return row;
+}
+
+/** Cellular automaton — totalistic evolution from a configurable seed row */
+function algCellular(cols, rows, opts) {
+    const g = [];
+    const seedType = (opts && opts.seedPattern) || 'random';
+    // Seed the first row based on selected pattern
+    g[0] = initializeSeedRow(cols, seedType, opts, 'random');
+
     // Evolve using a totalistic rule influenced by density
     for (let r = 1; r < rows; r++) {
         g[r] = [];
@@ -205,35 +218,8 @@ function algWolfram(cols, rows, opts) {
     }
     const g = [];
     // Seed row based on selected pattern
-    g[0] = [];
-    for (let c = 0; c < cols; c++) g[0][c] = 0;
-    switch (seedType) {
-        case 'random':
-            for (let c = 0; c < cols; c++) g[0][c] = random() < 0.5 ? 1 : 0;
-            break;
-        case 'alternating':
-            for (let c = 0; c < cols; c++) g[0][c] = c % 2;
-            break;
-        case 'twoCells':
-            g[0][Math.floor(cols / 3)] = 1;
-            g[0][Math.floor(2 * cols / 3)] = 1;
-            break;
-        case 'edges':
-            g[0][0] = 1;
-            g[0][cols - 1] = 1;
-            break;
-        case 'custom':
-            const seedTextW = (opts && opts.customSeed) || '';
-            const hashW = hashCode(seedTextW);
-            randomSeed(hashW);
-            for (let c = 0; c < cols; c++) g[0][c] = random() < 0.5 ? 1 : 0;
-            // reset random seed
-            randomSeed(Math.random() * 100000);
-            break;
-        default: // center
-            g[0][Math.floor(cols / 2)] = 1;
-            break;
-    }
+    g[0] = initializeSeedRow(cols, seedType, opts, 'center');
+
     for (let r = 1; r < rows; r++) {
         g[r] = [];
         for (let c = 0; c < cols; c++) {
