@@ -1,6 +1,22 @@
 // ── Shared constants and helpers ──────────────────────────
 
 /**
+ * Triggers a browser download for a given Blob.
+ * @param {Blob} blob     The data to download
+ * @param {string} filename The name of the file to save as
+ */
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+/**
  * Debounce a function so it only fires after `ms` of quiet time.
  * @param {Function} fn  Function to debounce
  * @param {number} ms    Wait period in milliseconds
@@ -167,6 +183,7 @@ const PARAM2_LABELS = {
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
+        downloadBlob,
         debounce,
         canvasSize,
         getRowColors,
